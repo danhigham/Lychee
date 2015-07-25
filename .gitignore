@@ -16,3 +16,5 @@ plugins/*
 
 !plugins/check/
 !plugins/displaylog/
+
+manifest.yml
