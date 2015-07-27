@@ -53,7 +53,7 @@ function search($database, $settings, $term) {
 		# For each thumb
 		$k = 0;
 		while ($thumb = $thumbs->fetch_object()) {
-			$album['thumbs'][$k] = LYCHEE_URL_UPLOADS_THUMB . $thumb->thumbUrl;
+			$album['thumbs'][$k] = LYCHEE_S3_URL_UPLOADS_THUMB . $thumb->thumbUrl;
 			$k++;
 		}
 

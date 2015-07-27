@@ -88,6 +88,8 @@ class Photo extends Module {
 
 		foreach ($files as $file) {
 
+			Log::notice($this->database, __METHOD__, __LINE__, "Temp file path : " . $file['tmp_name']);
+
 			# Verify extension
 			$extension = getExtension($file['name']);
 			if (!in_array(strtolower($extension), Photo::$validExtensions, true)) {
@@ -98,6 +100,9 @@ class Photo extends Module {
 
 			# Verify image
 			$type = @exif_imagetype($file['tmp_name']);
+
+			Log::notice($this->database, __METHOD__, __LINE__, "File type : " . $type);
+
 			if (!in_array($type, Photo::$validTypes, true)) {
 				Log::error($this->database, __METHOD__, __LINE__, 'Photo type not supported');
 				if ($returnOnError===true) return false;
@@ -112,6 +117,7 @@ class Photo extends Module {
 			$tmp_name	= $file['tmp_name'];
 			$photo_name	= md5($id) . $extension;
 			$path		= LYCHEE_UPLOADS_BIG . $photo_name;
+			$s3_path = LYCHEE_S3_UPLOADS_BIG . $photo_name;
 
 			# Calculate checksum
 			$checksum = sha1_file($tmp_name);
@@ -138,24 +144,29 @@ class Photo extends Module {
 					$medium		= ($exists['medium']==='1' ? 1 : 0);
 					$exists		= true;
 				}
-
 			}
 
 			if ($exists===false) {
 
 				# Import if not uploaded via web
 				if (!is_uploaded_file($tmp_name)) {
-					if (!@copy($tmp_name, $path)) {
-						Log::error($this->database, __METHOD__, __LINE__, 'Could not copy photo to uploads');
-						if ($returnOnError===true) return false;
-						exit('Error: Could not copy photo to uploads!');
-					} else @unlink($tmp_name);
+
+					// if (!@copy($tmp_name, $path)) {
+					// 	Log::error($this->database, __METHOD__, __LINE__, 'Could not copy photo to uploads');
+					// 	if ($returnOnError===true) return false;
+					// 	exit('Error: Could not copy photo to uploads!');
+					// } else @unlink($tmp_name);
+
 				} else {
-					if (!@move_uploaded_file($tmp_name, $path)) {
-						Log::error($this->database, __METHOD__, __LINE__, 'Could not move photo to uploads');
-						if ($returnOnError===true) return false;
-						exit('Error: Could not move photo to uploads!');
-					}
+
+					Log::notice($this->database, __METHOD__, __LINE__, "Uploading " . $tmp_name . " to S3");
+					S3::putObject(S3::inputFile($tmp_name, false), S3_BUCKET, $s3_path, S3::ACL_PUBLIC_READ);
+
+					// if (!@move_uploaded_file($tmp_name, $path)) {
+					// 	Log::error($this->database, __METHOD__, __LINE__, 'Could not move photo to uploads');
+					// 	if ($returnOnError===true) return false;
+					// 	exit('Error: Could not move photo to uploads!');
+					// }
 				}
 
 			} else {
@@ -171,7 +182,7 @@ class Photo extends Module {
 			}
 
 			# Read infos
-			$info = $this->getInfo($path);
+			$info = $this->getInfo($tmp_name);
 
 			# Use title of file if IPTC title missing
 			if ($info['title']==='') $info['title'] = substr(basename($file['name'], $extension), 0, 30);
@@ -183,7 +194,7 @@ class Photo extends Module {
 
 				# Set orientation based on EXIF data
 				if ($file['type']==='image/jpeg'&&isset($info['orientation'])&&$info['orientation']!=='') {
-					$adjustFile = $this->adjustFile($path, $info);
+					$adjustFile = $this->adjustFile($tmp_name, $info);
 					if ($adjustFile!==false) $info = $adjustFile;
 					else Log::notice($this->database, __METHOD__, __LINE__, 'Skipped adjustment of photo (' . $info['title'] . ')');
 				}
@@ -192,14 +203,14 @@ class Photo extends Module {
 				if ($info['takestamp']!==''&&$info['takestamp']!==0) @touch($path, $info['takestamp']);
 
 				# Create Thumb
-				if (!$this->createThumb($path, $photo_name, $info['type'], $info['width'], $info['height'])) {
+				if (!$this->createThumb($tmp_name, $photo_name, $info['type'], $info['width'], $info['height'])) {
 					Log::error($this->database, __METHOD__, __LINE__, 'Could not create thumbnail for photo');
 					if ($returnOnError===true) return false;
 					exit('Error: Could not create thumbnail for photo!');
 				}
 
 				# Create Medium
-				if ($this->createMedium($path, $photo_name, $info['width'], $info['height'])) $medium = 1;
+				if ($this->createMedium($tmp_name, $photo_name, $info['width'], $info['height'])) $medium = 1;
 				else $medium = 0;
 
 				# Set thumb url
@@ -275,8 +286,11 @@ class Photo extends Module {
 		$newHeight	= 200;
 
 		$photoName	= explode('.', $filename);
-		$newUrl		= LYCHEE_UPLOADS_THUMB . $photoName[0] . '.jpeg';
-		$newUrl2x	= LYCHEE_UPLOADS_THUMB . $photoName[0] . '@2x.jpeg';
+		$newUrl		= LYCHEE_S3_UPLOADS_THUMB . $photoName[0] . '.jpeg';
+		$newUrl2x	= LYCHEE_S3_UPLOADS_THUMB . $photoName[0] . '@2x.jpeg';
+
+		$tmp = tempnam(sys_get_temp_dir(), $newUrl);
+		$tmp2 = tempnam(sys_get_temp_dir(), $newUrl2x);
 
 		# Create thumbnails with Imagick
 		if(extension_loaded('imagick')&&$this->settings['imagick']==='1') {
@@ -292,13 +306,13 @@ class Photo extends Module {
 
 			# Create 1st version
 			$thumb->cropThumbnailImage($newWidth, $newHeight);
-			$thumb->writeImage($newUrl);
+			$thumb->writeImage($tmp);
 			$thumb->clear();
 			$thumb->destroy();
 
 			# Create 2nd version
 			$thumb2x->cropThumbnailImage($newWidth*2, $newHeight*2);
-			$thumb2x->writeImage($newUrl2x);
+			$thumb2x->writeImage($tmp2);
 			$thumb2x->clear();
 			$thumb2x->destroy();
 
@@ -331,18 +345,22 @@ class Photo extends Module {
 
 			# Create thumb
 			fastimagecopyresampled($thumb, $sourceImg, 0, 0, $startWidth, $startHeight, $newWidth, $newHeight, $newSize, $newSize);
-			imagejpeg($thumb, $newUrl, $this->settings['thumbQuality']);
+			imagejpeg($thumb, $tmp, $this->settings['thumbQuality']);
 			imagedestroy($thumb);
 
 			# Create retina thumb
 			fastimagecopyresampled($thumb2x, $sourceImg, 0, 0, $startWidth, $startHeight, $newWidth*2, $newHeight*2, $newSize, $newSize);
-			imagejpeg($thumb2x, $newUrl2x, $this->settings['thumbQuality']);
+			imagejpeg($thumb2x, $tmp2, $this->settings['thumbQuality']);
 			imagedestroy($thumb2x);
 
 			# Free memory
 			imagedestroy($sourceImg);
 
 		}
+
+		# Upload to S3
+		S3::putObject(S3::inputFile($tmp, false), S3_BUCKET, $newUrl, S3::ACL_PUBLIC_READ);
+		S3::putObject(S3::inputFile($tmp2, false), S3_BUCKET, $newUrl2x, S3::ACL_PUBLIC_READ);
 
 		# Call plugins
 		$this->plugins(__METHOD__, 1, func_get_args());
@@ -395,7 +413,8 @@ class Photo extends Module {
 			($this->settings['medium']==='1')&&
 			(extension_loaded('imagick')&&$this->settings['imagick']==='1')) {
 
-			$newUrl = LYCHEE_UPLOADS_MEDIUM . $filename;
+			$newUrl	= LYCHEE_S3_UPLOADS_MEDIUM . $filename;
+			$tmp = tempnam(sys_get_temp_dir(), $newUrl);
 
 			# Read image
 			$medium = new Imagick();
@@ -405,7 +424,7 @@ class Photo extends Module {
 			$medium->scaleImage($newWidth, $newHeight, true);
 
 			# Save image
-			try { $medium->writeImage($newUrl); }
+			try { $medium->writeImage($tmp); }
 			catch (ImagickException $err) {
 				Log::notice($this->database, __METHOD__, __LINE__, 'Could not save medium-photo: ' . $err->getMessage());
 				$error = true;
@@ -413,6 +432,8 @@ class Photo extends Module {
 
 			$medium->clear();
 			$medium->destroy();
+
+			S3::putObject(S3::inputFile($tmp, false), S3_BUCKET, $newUrl, S3::ACL_PUBLIC_READ);
 
 		} else {
 
@@ -593,8 +614,8 @@ class Photo extends Module {
 		$photo['album']		= $data['album'];
 
 		# Parse urls
-		$photo['thumbUrl']	= LYCHEE_URL_UPLOADS_THUMB . $data['thumbUrl'];
-		$photo['url']		= LYCHEE_URL_UPLOADS_BIG . $data['url'];
+		$photo['thumbUrl']	= LYCHEE_S3_URL_UPLOADS_THUMB . $data['thumbUrl'];
+		$photo['url']		= LYCHEE_S3_URL_UPLOADS_BIG . $data['url'];
 
 		# Use takestamp as sysdate when possible
 		if (isset($data['takestamp'])&&$data['takestamp']!=='0') {
@@ -639,12 +660,12 @@ class Photo extends Module {
 		if (strlen($photo['takestamp'])>1) $photo['takedate'] = date('d M. Y', $photo['takestamp']);
 
 		# Parse medium
-		if ($photo['medium']==='1')	$photo['medium'] = LYCHEE_URL_UPLOADS_MEDIUM . $photo['url'];
+		if ($photo['medium']==='1')	$photo['medium'] = LYCHEE_S3_URL_UPLOADS_MEDIUM . $photo['url'];
 		else						$photo['medium'] = '';
 
 		# Parse paths
-		$photo['url']		= LYCHEE_URL_UPLOADS_BIG . $photo['url'];
-		$photo['thumbUrl']	= LYCHEE_URL_UPLOADS_THUMB . $photo['thumbUrl'];
+		$photo['url']		= LYCHEE_S3_URL_UPLOADS_BIG . $photo['url'];
+		$photo['thumbUrl']	= LYCHEE_S3_URL_UPLOADS_THUMB . $photo['thumbUrl'];
 
 		if ($albumID!='false') {
 
@@ -1183,28 +1204,36 @@ class Photo extends Module {
 				$thumbUrl2x = $thumbUrl2x[0] . '@2x.' . $thumbUrl2x[1];
 
 				# Delete big
-				if (file_exists(LYCHEE_UPLOADS_BIG . $photo->url)&&!unlink(LYCHEE_UPLOADS_BIG . $photo->url)) {
-					Log::error($this->database, __METHOD__, __LINE__, 'Could not delete photo in uploads/big/');
-					return false;
-				}
+				// if (file_exists(LYCHEE_UPLOADS_BIG . $photo->url)&&!unlink(LYCHEE_UPLOADS_BIG . $photo->url)) {
+				// 	Log::error($this->database, __METHOD__, __LINE__, 'Could not delete photo in uploads/big/');
+				// 	return false;
+				// }
 
-				# Delete medium
-				if (file_exists(LYCHEE_UPLOADS_MEDIUM . $photo->url)&&!unlink(LYCHEE_UPLOADS_MEDIUM . $photo->url)) {
-					Log::error($this->database, __METHOD__, __LINE__, 'Could not delete photo in uploads/medium/');
-					return false;
-				}
+				S3::deleteObject(S3_BUCKET, LYCHEE_S3_UPLOADS_BIG . $photo->url);
 
-				# Delete thumb
-				if (file_exists(LYCHEE_UPLOADS_THUMB . $photo->thumbUrl)&&!unlink(LYCHEE_UPLOADS_THUMB . $photo->thumbUrl)) {
-					Log::error($this->database, __METHOD__, __LINE__, 'Could not delete photo in uploads/thumb/');
-					return false;
-				}
+				// # Delete medium
+				// if (file_exists(LYCHEE_UPLOADS_MEDIUM . $photo->url)&&!unlink(LYCHEE_UPLOADS_MEDIUM . $photo->url)) {
+				// 	Log::error($this->database, __METHOD__, __LINE__, 'Could not delete photo in uploads/medium/');
+				// 	return false;
+				// }
 
-				# Delete thumb@2x
-				if (file_exists(LYCHEE_UPLOADS_THUMB . $thumbUrl2x)&&!unlink(LYCHEE_UPLOADS_THUMB . $thumbUrl2x))	 {
-					Log::error($this->database, __METHOD__, __LINE__, 'Could not delete high-res photo in uploads/thumb/');
-					return false;
-				}
+				S3::deleteObject(S3_BUCKET, LYCHEE_S3_UPLOADS_MEDIUM . $photo->url);
+
+				// # Delete thumb
+				// if (file_exists(LYCHEE_UPLOADS_THUMB . $photo->thumbUrl)&&!unlink(LYCHEE_UPLOADS_THUMB . $photo->thumbUrl)) {
+				// 	Log::error($this->database, __METHOD__, __LINE__, 'Could not delete photo in uploads/thumb/');
+				// 	return false;
+				// }
+
+				S3::deleteObject(S3_BUCKET, LYCHEE_S3_UPLOADS_THUMB . $photo->url);
+
+				// # Delete thumb@2x
+				// if (file_exists(LYCHEE_UPLOADS_THUMB . $thumbUrl2x)&&!unlink(LYCHEE_UPLOADS_THUMB . $thumbUrl2x))	 {
+				// 	Log::error($this->database, __METHOD__, __LINE__, 'Could not delete high-res photo in uploads/thumb/');
+				// 	return false;
+				// }
+
+				S3::deleteObject(S3_BUCKET, LYCHEE_S3_UPLOADS_THUMB . $thumbUrl2x);
 
 			}
 

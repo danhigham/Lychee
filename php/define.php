@@ -23,6 +23,14 @@ define('LYCHEE_UPLOADS_THUMB', LYCHEE_UPLOADS . 'thumb/');
 define('LYCHEE_UPLOADS_IMPORT', LYCHEE_UPLOADS . 'import/');
 define('LYCHEE_PLUGINS', LYCHEE . 'plugins/');
 
+define('S3_BUCKET', 'dh-lychee-photos');
+define('LYCHEE_S3_UPLOADS_BIG', 'big/');
+define('LYCHEE_S3_UPLOADS_MEDIUM', 'medium/');
+define('LYCHEE_S3_UPLOADS_THUMB', 'thumb/');
+define('LYCHEE_S3_UPLOADS_IMPORT', 'import/');
+
+
+
 # Define files
 define('LYCHEE_CONFIG_FILE', LYCHEE_DATA . 'config.php');
 
@@ -30,6 +38,11 @@ define('LYCHEE_CONFIG_FILE', LYCHEE_DATA . 'config.php');
 define('LYCHEE_URL_UPLOADS_BIG', 'uploads/big/');
 define('LYCHEE_URL_UPLOADS_MEDIUM', 'uploads/medium/');
 define('LYCHEE_URL_UPLOADS_THUMB', 'uploads/thumb/');
+
+define('LYCHEE_S3_URL_UPLOADS_BIG', 'https://s3.amazonaws.com/dh-lychee-photos/big/');
+define('LYCHEE_S3_URL_UPLOADS_MEDIUM', 'https://s3.amazonaws.com/dh-lychee-photos/medium/');
+define('LYCHEE_S3_URL_UPLOADS_THUMB', 'https://s3.amazonaws.com/dh-lychee-photos/thumb/');
+
 
 function defineTablePrefix($dbTablePrefix) {
 

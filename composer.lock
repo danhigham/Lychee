@@ -1,0 +1,109 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "9ec565b3354b71446503a2607e197438",
+    "packages": [
+        {
+            "name": "miljar/php-exif",
+            "version": "v0.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Miljar/php-exif.git",
+                "reference": "a4ba0d1bf15c8ac15c849feddea60c192fcac5c7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Miljar/php-exif/zipball/a4ba0d1bf15c8ac15c849feddea60c192fcac5c7",
+                "reference": "a4ba0d1bf15c8ac15c849feddea60c192fcac5c7",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "phpmd/phpmd": "~2.2",
+                "phpunit/phpunit": "3.7.*",
+                "satooshi/php-coveralls": "~0.6",
+                "sebastian/phpcpd": "1.4.*@stable",
+                "squizlabs/php_codesniffer": "1.4.*@stable"
+            },
+            "suggest": {
+                "lib-exiftool": "Use perl lib exiftool as adapter"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "PHPExif": "lib/"
+                }
+            },
+            "notification-url": "http://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Tom Van Herreweghe",
+                    "homepage": "http://theanalogguy.be",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Object-Oriented EXIF parsing",
+            "keywords": [
+                "IPTC",
+                "exif",
+                "exiftool",
+                "jpeg",
+                "tiff"
+            ],
+            "time": "2015-04-04 11:11:54"
+        },
+        {
+            "name": "tpyo/amazon-s3-php-class",
+            "version": "v0.5.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tpyo/amazon-s3-php-class.git",
+                "reference": "121318e65e857a994b22ffe0aa04a0c55e832bea"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tpyo/amazon-s3-php-class/zipball/121318e65e857a994b22ffe0aa04a0c55e832bea",
+                "reference": "121318e65e857a994b22ffe0aa04a0c55e832bea",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.2.0"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "S3.php"
+                ]
+            },
+            "notification-url": "http://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Donovan Schönknecht",
+                    "email": "don@tpyo.net"
+                }
+            ],
+            "description": "A standalone Amazon S3 (REST) client for PHP 5.2.x using CURL that does not require PEAR.",
+            "homepage": "https://github.com/tpyo/amazon-s3-php-class",
+            "time": "2015-04-27 06:12:39"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

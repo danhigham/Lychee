@@ -1,18 +1,6 @@
 {
-    "name": "electerious/Lychee",
-    "description": "Lychee Photo Hosting",
-    "repositories":[
-        {
-            "type":"composer",
-            "url":"http://packagist.org"
-        }
-    ],
     "require": {
-        "miljar/php-exif": "~0.4.0"
-    },
-    "autoload": {
-        "psr-0": {
-            "Acme": "src/"
-        }
+        "miljar/php-exif": "~0.4.0",
+        "tpyo/amazon-s3-php-class": "*"
     }
 }

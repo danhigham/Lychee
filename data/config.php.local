@@ -1,0 +1,24 @@
+<?php
+
+###
+# @name			Configuration
+# @author		Tobias Reich
+# @copyright	2015 Tobias Reich
+###
+
+if(!defined('LYCHEE')) exit('Error: Direct access is not allowed!');
+
+# Database configuration
+$dbHost = 'localhost:8889'; # Host of the database
+$dbUser = 'root'; # Username of the database
+$dbPassword = 'root'; # Password of the database
+$dbName = 'lychee'; # Database name
+$dbTablePrefix = ''; # Table prefix
+
+#S3 Configuration
+$awsAccessKey = 'AKIAJLTORLH42KOIVFZQ';
+$awsSecretKey = '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';
+
+S3::setAuth($awsAccessKey, $awsSecretKey);
+
+?>

@@ -30,4 +30,10 @@ function lycheeAutoloaderAccess($class_name) {
 spl_autoload_register('lycheeAutoloaderModules');
 spl_autoload_register('lycheeAutoloaderAccess');
 
+require(__DIR__ . '/../../lib/vendor/autoload.php');
+// require(__DIR__ . '/../vendor/autoload.php');
+
+
+
+
 ?>

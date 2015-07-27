@@ -21,7 +21,6 @@
 		<meta name="apple-mobile-web-app-capable" content="yes">
 
 		<?php
-
 			if (isset($_GET['p'])&&$_GET['p']>0) {
 
 				# Load required files
