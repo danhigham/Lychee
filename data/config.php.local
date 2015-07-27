@@ -16,8 +16,8 @@ $dbName = 'lychee'; # Database name
 $dbTablePrefix = ''; # Table prefix
 
 #S3 Configuration
-$awsAccessKey = 'AKIAJLTORLH42KOIVFZQ';
-$awsSecretKey = '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';
+$awsAccessKey = 'xxxxxxxxxxxxxxx';
+$awsSecretKey = 'xxxxxxxxxxxxxxxx';
 
 S3::setAuth($awsAccessKey, $awsSecretKey);
 
