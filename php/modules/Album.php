@@ -206,8 +206,8 @@ class Album extends Module {
 			$album = Album::prepareData($album);
 
 			# Thumbs
-			if (($public===true&&$album['password']==='0')||
-				($public===false)) {
+			// if (($public===true&&$album['password']==='0')||
+			// 	($public===false)) {
 
 					# Execute query
 					$query	= Database::prepare($this->database, "SELECT thumbUrl FROM ? WHERE album = '?' ORDER BY star DESC, " . substr($this->settings['sortingPhotos'], 9) . " LIMIT 3", array(LYCHEE_TABLE_PHOTOS, $album['id']));
@@ -220,7 +220,7 @@ class Album extends Module {
 						$k++;
 					}
 
-			}
+			// }
 
 			# Add to return
 			$return['albums'][] = $album;

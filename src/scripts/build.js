@@ -33,10 +33,14 @@ build.album = function(data) {
 
 	if (data==null) return ''
 
+	console.log(data);
+	var locked = '';
+	if ((data.password) == "1" && (data.public == "1")) { locked = " locked" }
+
 	let { path: thumbPath, hasRetina: thumbRetina } = lychee.retinize(data.thumbs[0])
 
 	let html = `
-	           <div class='album' data-id='${ data.id }'>
+	           <div class='album${ locked }' data-id='${ data.id }'>
 	               <img src='${ data.thumbs[2] }' width='200' height='200' alt='thumb' data-retina='false'>
 	               <img src='${ data.thumbs[1] }' width='200' height='200' alt='thumb' data-retina='false'>
 	               <img src='${ thumbPath }' width='200' height='200' alt='thumb' data-retina='${ thumbRetina }'>
